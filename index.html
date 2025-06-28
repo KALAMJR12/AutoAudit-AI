@@ -1,79 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>AutoAudit AI - Fraud Assistant</title>
+  <meta charset="UTF-8" />
+  <title>AutoAudit AI - Fraud Escalation Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #f3f4f6;
       margin: 0;
       padding: 2rem;
-      color: #111;
     }
     .container {
-      max-width: 600px;
+      max-width: 750px;
       margin: auto;
-      background: white;
+      background: #fff;
       padding: 2rem;
       border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.05);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
     }
-    input, button, textarea {
+    h1 {
+      color: #007aff;
+    }
+    textarea, button, input[type="file"] {
       width: 100%;
       padding: 1rem;
-      margin-top: 1rem;
       font-size: 1rem;
-      border: 1px solid #ccc;
+      margin-top: 1rem;
       border-radius: 8px;
+      border: 1px solid #ccc;
     }
     button {
-      background-color: #007aff;
+      background: #007aff;
       color: white;
+      font-weight: bold;
       cursor: pointer;
     }
     button:hover {
-      background-color: #0051aa;
+      background: #005bb5;
     }
-    #response {
+    #results {
       margin-top: 2rem;
-      white-space: pre-wrap;
       background: #f9fafb;
       padding: 1rem;
+      border-left: 4px solid #007aff;
       border-radius: 8px;
+      white-space: pre-wrap;
     }
+    .risk-high { color: red; font-weight: bold; }
+    .risk-medium { color: orange; font-weight: bold; }
+    .risk-low { color: green; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>AutoAudit AI 🤖</h2>
-    <p>Ask a question about fraud detection:</p>
-    <textarea id="userInput" rows="3" placeholder="e.g., List all fraud transactions over ₦500,000"></textarea>
-    <button onclick="handleQuery()">Submit</button>
+    <h1>AutoAudit AI 📊</h1>
+    <p>Upload transaction CSV to detect and classify frauds. We’ll flag issues and generate an email to escalate automatically.</p>
 
-    <div id="response"></div>
+    <input type="file" id="csvFile" accept=".csv" />
+    <button onclick="analyzeCSV()">Analyze File</button>
+
+    <div id="results"></div>
+    <button onclick="sendEmail()">Send Email to Auditor</button>
   </div>
 
   <script>
-    function handleQuery() {
-      const input = document.getElementById('userInput').value.trim();
-      const responseBox = document.getElementById('response');
+    let emailContent = "";
+    let fraudList = [];
 
-      if (!input) {
-        responseBox.innerHTML = "⚠️ Please enter a question.";
+    function analyzeCSV() {
+      const file = document.getElementById('csvFile').files[0];
+      if (!file) return alert("Please select a CSV file.");
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const data = results.data;
+          fraudList = data.filter(row => row.Class === "1");
+
+          let summary = `Total Fraud Transactions: ${fraudList.length}\n`;
+          let high = [], med = [], low = [];
+
+          fraudList.forEach(tx => {
+            const amount = parseFloat(tx.Amount);
+            if (amount > 1500) high.push(tx);
+            else if (amount >= 500) med.push(tx);
+            else low.push(tx);
+          });
+
+          summary += `\n🔴 High Risk: ${high.length}\n🟠 Medium Risk: ${med.length}\n🟢 Low Risk: ${low.length}\n`;
+
+          summary += "\nTop High Risk Transactions:\n";
+          high.slice(0, 5).forEach(tx => {
+            summary += `- ₦${parseFloat(tx.Amount).toLocaleString()} at Time ${tx.Time}\n`;
+          });
+
+          emailContent = `
+Dear Auditor,
+
+AutoAudit AI has detected ${fraudList.length} suspicious transactions.
+
+Risk Breakdown:
+- High Risk: ${high.length}
+- Medium Risk: ${med.length}
+- Low Risk: ${low.length}
+
+Top High-Risk Cases:
+${high.slice(0, 5).map(tx => `• ₦${tx.Amount} at time ${tx.Time}`).join('\n')}
+
+Please review and take necessary action.
+
+Regards,
+AutoAudit AI`;
+
+          document.getElementById('results').innerText = summary;
+        }
+      });
+    }
+
+    function sendEmail() {
+      if (!emailContent) {
+        alert("Run an analysis first.");
         return;
       }
-
-      // Temporary fake response - later this will come from API
-      const fakeResponse = `🔍 AI Response:
-Based on current data, the following transactions are flagged as high risk:
-- ₦2,125,870 at 08:42AM
-- ₦1,800,000 at 04:20PM
-
-Fraud percentage: 0.17%
-✅ Flagged for review.`;
-
-      responseBox.innerText = fakeResponse;
+      const subject = encodeURIComponent("Fraud Alert Report - AutoAudit AI");
+      const body = encodeURIComponent(emailContent);
+      const mailto = `mailto:umarmusamusa42@gmail.com?subject=${subject}&body=${body}`;
+      window.location.href = mailto;
     }
   </script>
 </body>
