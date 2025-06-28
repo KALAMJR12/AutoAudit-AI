@@ -17,13 +17,13 @@
 </head>
 <body>
   <div class="container">
-    <h1>📂 AutoAudit AI</h1>
+    <h1>AutoAudit AI</h1>
     <p>Upload your transaction file (.csv) and describe what to analyze.</p>
     <input type="file" id="csvInput" accept=".csv,text/csv">
     <textarea id="userPrompt" placeholder="Describe what you want the AI to analyze (e.g. 'List all fraud transactions over ₦500 and classify them')"></textarea>
     <button onclick="analyzeAndSend()">Analyze & Generate Prompt</button>
     <div id="output"></div>
-    <button onclick="emailAuditor()">✉️ Email Escalation</button>
+    <button onclick="emailAuditor()">Email Escalation</button>
   </div>
 
   <script>
