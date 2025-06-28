@@ -1,134 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>AutoAudit AI - Fraud Escalation Assistant</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>AutoAudit AI - Fraud Detection</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 2rem;
-    }
-    .container {
-      max-width: 750px;
-      margin: auto;
-      background: #fff;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-    }
-    h1 {
-      color: #007aff;
-    }
-    textarea, button, input[type="file"] {
-      width: 100%;
-      padding: 1rem;
-      font-size: 1rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #007aff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #005bb5;
-    }
-    #results {
-      margin-top: 2rem;
-      background: #f9fafb;
-      padding: 1rem;
-      border-left: 4px solid #007aff;
-      border-radius: 8px;
-      white-space: pre-wrap;
-    }
-    .risk-high { color: red; font-weight: bold; }
-    .risk-medium { color: orange; font-weight: bold; }
-    .risk-low { color: green; font-weight: bold; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f9f9f9; padding: 2rem; }
+    .container { max-width: 800px; margin: auto; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    h1 { color: #1a73e8; }
+    input, button, textarea { width: 100%; margin: 1rem 0; padding: 1rem; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; }
+    button { background: #1a73e8; color: white; font-weight: bold; cursor: pointer; }
+    button:hover { background: #155ab6; }
+    #output { background: #f1f3f4; padding: 1rem; border-radius: 8px; white-space: pre-wrap; font-family: monospace; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>AutoAudit AI 📊</h1>
-    <p>Upload transaction CSV to detect and classify frauds. We’ll flag issues and generate an email to escalate automatically.</p>
-
-    <input type="file" id="csvFile" accept=".csv" />
-    <button onclick="analyzeCSV()">Analyze File</button>
-
-    <div id="results"></div>
-    <button onclick="sendEmail()">Send Email to Auditor</button>
+    <h1>📂 AutoAudit AI</h1>
+    <p>Upload your transaction file (.csv) to analyze for fraud and escalate results.</p>
+    <input type="file" id="csvInput" accept=".csv,text/csv">
+    <button onclick="analyzeAndSend()">Analyze & Generate Email</button>
+    <div id="output"></div>
+    <button onclick="emailAuditor()">✉️ Email Escalation</button>
   </div>
 
   <script>
-    let emailContent = "";
-    let fraudList = [];
+    let finalPrompt = "";
 
-    function analyzeCSV() {
-      const file = document.getElementById('csvFile').files[0];
-      if (!file) return alert("Please select a CSV file.");
+    function analyzeAndSend() {
+      const file = document.getElementById('csvInput').files[0];
+      if (!file) return alert("Please upload a CSV file first.");
 
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-          const data = results.data;
-          fraudList = data.filter(row => row.Class === "1");
+          const frauds = results.data.filter(row => row.Class === "1");
 
-          let summary = `Total Fraud Transactions: ${fraudList.length}\n`;
-          let high = [], med = [], low = [];
+          if (frauds.length === 0) {
+            document.getElementById('output').innerText = "✅ No fraudulent transactions found.";
+            return;
+          }
 
-          fraudList.forEach(tx => {
-            const amount = parseFloat(tx.Amount);
-            if (amount > 1500) high.push(tx);
-            else if (amount >= 500) med.push(tx);
-            else low.push(tx);
-          });
+          let summary = frauds.map((row, i) => `- ₦${parseFloat(row.Amount).toLocaleString()} at Time ${row.Time}`).join("\n");
 
-          summary += `\n🔴 High Risk: ${high.length}\n🟠 Medium Risk: ${med.length}\n🟢 Low Risk: ${low.length}\n`;
+          finalPrompt = `You are a financial fraud auditor.\n\nHere are some flagged transactions:\n${summary}\n\nClassify them as High, Medium, or Low Risk using:\n- > ₦1,500,000 = High\n- ₦500,000–₦1,500,000 = Medium\n- < ₦500,000 = Low\n\nThen generate an escalation email to umarmusamusa42@gmail.com with a summary of the fraud findings.`;
 
-          summary += "\nTop High Risk Transactions:\n";
-          high.slice(0, 5).forEach(tx => {
-            summary += `- ₦${parseFloat(tx.Amount).toLocaleString()} at Time ${tx.Time}\n`;
-          });
-
-          emailContent = `
-Dear Auditor,
-
-AutoAudit AI has detected ${fraudList.length} suspicious transactions.
-
-Risk Breakdown:
-- High Risk: ${high.length}
-- Medium Risk: ${med.length}
-- Low Risk: ${low.length}
-
-Top High-Risk Cases:
-${high.slice(0, 5).map(tx => `• ₦${tx.Amount} at time ${tx.Time}`).join('\n')}
-
-Please review and take necessary action.
-
-Regards,
-AutoAudit AI`;
-
-          document.getElementById('results').innerText = summary;
+          document.getElementById('output').innerText = "🧠 Prompt ready for AI:\n\n" + finalPrompt;
+        },
+        error: function(err) {
+          document.getElementById('output').innerText = "❌ Error parsing CSV: " + err.message;
         }
       });
     }
 
-    function sendEmail() {
-      if (!emailContent) {
-        alert("Run an analysis first.");
-        return;
-      }
-      const subject = encodeURIComponent("Fraud Alert Report - AutoAudit AI");
-      const body = encodeURIComponent(emailContent);
-      const mailto = `mailto:umarmusamusa42@gmail.com?subject=${subject}&body=${body}`;
-      window.location.href = mailto;
+    function emailAuditor() {
+      if (!finalPrompt) return alert("Analyze a file first!");
+      const subject = encodeURIComponent("AutoAudit AI - Fraud Escalation");
+      const body = encodeURIComponent(finalPrompt);
+      window.location.href = `mailto:umarmusamusa42@gmail.com?subject=${subject}&body=${body}`;
     }
   </script>
 </body>
