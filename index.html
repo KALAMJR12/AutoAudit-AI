@@ -9,7 +9,7 @@
     body { font-family: 'Segoe UI', sans-serif; background: #f9f9f9; padding: 2rem; }
     .container { max-width: 800px; margin: auto; background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
     h1 { color: #1a73e8; }
-    input, button, textarea { width: 100%; margin: 1rem 0; padding: 1rem; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; }
+    input[type="file"], textarea, button { width: 100%; margin: 1rem 0; padding: 1rem; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; }
     button { background: #1a73e8; color: white; font-weight: bold; cursor: pointer; }
     button:hover { background: #155ab6; }
     #output { background: #f1f3f4; padding: 1rem; border-radius: 8px; white-space: pre-wrap; font-family: monospace; }
@@ -18,9 +18,9 @@
 <body>
   <div class="container">
     <h1>📂 AutoAudit AI</h1>
-    <p>Upload your transaction file (.csv) to analyze for fraud and escalate results.</p>
+    <p>Upload your transaction file (.csv) and describe what to analyze.</p>
     <input type="file" id="csvInput" accept=".csv,text/csv">
-    <input type="number" id="thresholdInput" placeholder="Enter fraud amount threshold (e.g. 500)">
+    <textarea id="userPrompt" placeholder="Describe what you want the AI to analyze (e.g. 'List all fraud transactions over ₦500 and classify them')"></textarea>
     <button onclick="analyzeAndSend()">Analyze & Generate Prompt</button>
     <div id="output"></div>
     <button onclick="emailAuditor()">✉️ Email Escalation</button>
@@ -31,24 +31,25 @@
 
     function analyzeAndSend() {
       const file = document.getElementById('csvInput').files[0];
-      const threshold = parseFloat(document.getElementById('thresholdInput').value);
+      const userPrompt = document.getElementById('userPrompt').value.trim();
+
       if (!file) return alert("Please upload a CSV file first.");
-      if (isNaN(threshold)) return alert("Please enter a valid threshold amount.");
+      if (!userPrompt) return alert("Please enter a prompt for the AI.");
 
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-          const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Amount) > threshold);
+          const frauds = results.data.filter(row => row.Class === "1");
 
           if (frauds.length === 0) {
-            document.getElementById('output').innerText = `✅ No fraudulent transactions found over ₦${threshold}.`;
+            document.getElementById('output').innerText = "✅ No fraudulent transactions found in the dataset.";
             return;
           }
 
           let summary = frauds.map((row, i) => `- ₦${parseFloat(row.Amount).toLocaleString()} at Time ${row.Time}`).join("\n");
 
-          finalPrompt = `You are a financial fraud auditor.\n\nHere are some flagged transactions over ₦${threshold}:\n${summary}\n\nClassify them as High, Medium, or Low Risk using:\n- > ₦1,500,000 = High\n- ₦500,000–₦1,500,000 = Medium\n- < ₦500,000 = Low\n\nThen generate an escalation email to umarmusamusa42@gmail.com with a summary of the fraud findings.`;
+          finalPrompt = `${userPrompt}\n\nHere are the fraud entries:\n${summary}`;
 
           document.getElementById('output').innerText = "🧠 Prompt ready for AI:\n\n" + finalPrompt;
         },
