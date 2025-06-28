@@ -42,7 +42,10 @@
         header: true,
         skipEmptyLines: true,
         complete: async function(results) {
-          const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Amount) > 500);
+         let thresholdMatch = userPrompt.match(/(?:₦|over\\s*)(\\d+[.,]?\\d*)/i);
+let threshold = thresholdMatch ? parseFloat(thresholdMatch[1].replace(/,/g, '')) : 0;
+const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Amount) > threshold);
+
 
           if (frauds.length === 0) {
             document.getElementById('output').innerText = "✅ No fraudulent transactions found in the dataset.";
