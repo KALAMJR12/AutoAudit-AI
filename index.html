@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AutoAudit AI - Fraud Assistant</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 2rem;
+      color: #111;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.05);
+    }
+    input, button, textarea {
+      width: 100%;
+      padding: 1rem;
+      margin-top: 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      background-color: #007aff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0051aa;
+    }
+    #response {
+      margin-top: 2rem;
+      white-space: pre-wrap;
+      background: #f9fafb;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>AutoAudit AI 🤖</h2>
+    <p>Ask a question about fraud detection:</p>
+    <textarea id="userInput" rows="3" placeholder="e.g., List all fraud transactions over ₦500,000"></textarea>
+    <button onclick="handleQuery()">Submit</button>
+
+    <div id="response"></div>
+  </div>
+
+  <script>
+    function handleQuery() {
+      const input = document.getElementById('userInput').value.trim();
+      const responseBox = document.getElementById('response');
+
+      if (!input) {
+        responseBox.innerHTML = "⚠️ Please enter a question.";
+        return;
+      }
+
+      // Temporary fake response - later this will come from API
+      const fakeResponse = `🔍 AI Response:
+Based on current data, the following transactions are flagged as high risk:
+- ₦2,125,870 at 08:42AM
+- ₦1,800,000 at 04:20PM
+
+Fraud percentage: 0.17%
+✅ Flagged for review.`;
+
+      responseBox.innerText = fakeResponse;
+    }
+  </script>
+</body>
+</html>
