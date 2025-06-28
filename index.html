@@ -20,7 +20,8 @@
     <h1>📂 AutoAudit AI</h1>
     <p>Upload your transaction file (.csv) to analyze for fraud and escalate results.</p>
     <input type="file" id="csvInput" accept=".csv,text/csv">
-    <button onclick="analyzeAndSend()">Analyze & Generate Email</button>
+    <input type="number" id="thresholdInput" placeholder="Enter fraud amount threshold (e.g. 500)">
+    <button onclick="analyzeAndSend()">Analyze & Generate Prompt</button>
     <div id="output"></div>
     <button onclick="emailAuditor()">✉️ Email Escalation</button>
   </div>
@@ -30,22 +31,24 @@
 
     function analyzeAndSend() {
       const file = document.getElementById('csvInput').files[0];
+      const threshold = parseFloat(document.getElementById('thresholdInput').value);
       if (!file) return alert("Please upload a CSV file first.");
+      if (isNaN(threshold)) return alert("Please enter a valid threshold amount.");
 
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-          const frauds = results.data.filter(row => row.Class === "1");
+          const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Amount) > threshold);
 
           if (frauds.length === 0) {
-            document.getElementById('output').innerText = "✅ No fraudulent transactions found.";
+            document.getElementById('output').innerText = `✅ No fraudulent transactions found over ₦${threshold}.`;
             return;
           }
 
           let summary = frauds.map((row, i) => `- ₦${parseFloat(row.Amount).toLocaleString()} at Time ${row.Time}`).join("\n");
 
-          finalPrompt = `You are a financial fraud auditor.\n\nHere are some flagged transactions:\n${summary}\n\nClassify them as High, Medium, or Low Risk using:\n- > ₦1,500,000 = High\n- ₦500,000–₦1,500,000 = Medium\n- < ₦500,000 = Low\n\nThen generate an escalation email to umarmusamusa42@gmail.com with a summary of the fraud findings.`;
+          finalPrompt = `You are a financial fraud auditor.\n\nHere are some flagged transactions over ₦${threshold}:\n${summary}\n\nClassify them as High, Medium, or Low Risk using:\n- > ₦1,500,000 = High\n- ₦500,000–₦1,500,000 = Medium\n- < ₦500,000 = Low\n\nThen generate an escalation email to umarmusamusa42@gmail.com with a summary of the fraud findings.`;
 
           document.getElementById('output').innerText = "🧠 Prompt ready for AI:\n\n" + finalPrompt;
         },
