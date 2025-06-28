@@ -27,7 +27,7 @@
   </div>
 
   <script>
-    let REPLICATE_API_TOKEN = "r8_YnMXqjOQFvnVMP0VeV7F6PIb3qlCPiU32Ycjf"; // Replace this securely in production
+    // Replace this securely in production
     let MODEL_VERSION = "a325a0cacfb0aa9226e6bad1abe5385f1073f4c7f8c36e52ed040e5409e6c034";
     let latestOutput = "";
 
@@ -42,10 +42,7 @@
         header: true,
         skipEmptyLines: true,
         complete: async function(results) {
-         let thresholdMatch = userPrompt.match(/(?:₦|over\\s*)(\\d+[.,]?\\d*)/i);
-let threshold = thresholdMatch ? parseFloat(thresholdMatch[1].replace(/,/g, '')) : 0;
-const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Amount) > threshold);
-
+          const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Amount) > 500);
 
           if (frauds.length === 0) {
             document.getElementById('output').innerText = "✅ No fraudulent transactions found in the dataset.";
@@ -66,14 +63,8 @@ const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Am
 
           const response = await fetch("https://fd297df9-e0d5-4887-9c6c-774710f25f47-00-7eir8n73452g.janeway.replit.dev/replicate", {
             method: "POST",
-            headers: {
-              "Authorization": `Token ${REPLICATE_API_TOKEN}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              version: MODEL_VERSION,
-              input: { prompt: finalPrompt }
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: finalPrompt })
           });
 
           const json = await response.json();
@@ -87,7 +78,7 @@ const frauds = results.data.filter(row => row.Class === "1" && parseFloat(row.Am
           let result;
           while (true) {
             const poll = await fetch(json.urls.get, {
-              headers: { "Authorization": `Token ${REPLICATE_API_TOKEN}` }
+              headers: {}
             });
             result = await poll.json();
             if (result.status === "succeeded") break;
